@@ -4,9 +4,16 @@ locals {
     rds_list    = split(", ", data.external.RDS.result["RDS"])
     aurora_serverless_list = split(", ", data.external.RDS.result["Aurora_serverless_list"])
   }
-
-  target_groups = {
-    for lb_name, _ in data.aws_alb.existing :
+  alb_target_groups = {
+    for lb_name, _ in data.aws_lb.application_lb :
+    lb_name => [
+      for tg_arn in split(",", lookup(data.external.Map_of_targetGroups.result, lb_name, "")) :
+      "targetgroup/${join("/", slice(split("/", tg_arn), 1, 3))}" # Extrai somente `targetgroup/{nome}/{id}`
+      if startswith(tg_arn, "arn:aws:elasticloadbalancing")
+    ]
+  }
+  nlb_target_groups = {
+    for lb_name, _ in data.aws_lb.network_lb :
     lb_name => [
       for tg_arn in split(",", lookup(data.external.Map_of_targetGroups.result, lb_name, "")) :
       "targetgroup/${join("/", slice(split("/", tg_arn), 1, 3))}" # Extrai somente `targetgroup/{nome}/{id}`
@@ -14,12 +21,13 @@ locals {
     ]
   }
 
-  load_balancer_widgets = flatten([
-    for lb_name, alb in data.aws_alb.existing : [
+
+  application_lb_widgets = flatten([
+    for lb_name, alb in data.aws_lb.application_lb : [
       {
         type   = "text"
         x      = 0
-        y      = 1 + index(keys(data.aws_alb.existing), lb_name) * 8
+        y      = 1 + index(keys(data.aws_lb.application_lb), lb_name) * 8
         width  = 24
         height = 2
         properties = {
@@ -30,7 +38,7 @@ locals {
       {
         type   = "metric"
         x      = 0
-        y      = 3 + index(keys(data.aws_alb.existing), lb_name) * 8
+        y      = 3 + index(keys(data.aws_lb.application_lb), lb_name) * 8
         width  = 6
         height = 6
         properties = {
@@ -45,7 +53,7 @@ locals {
       {
         type   = "metric"
         x      = 6
-        y      = 3 + index(keys(data.aws_alb.existing), lb_name) * 8
+        y      = 3 + index(keys(data.aws_lb.application_lb), lb_name) * 8
         width  = 6
         height = 6
         properties = {
@@ -60,7 +68,7 @@ locals {
       {
         type   = "metric"
         x      = 12
-        y      = 3 + index(keys(data.aws_alb.existing), lb_name) * 8
+        y      = 3 + index(keys(data.aws_lb.application_lb), lb_name) * 8
         width  = 6
         height = 6
         properties = {
@@ -89,12 +97,12 @@ locals {
       {
         type   = "metric",
         x      = 18,
-        y      = 3 + index(keys(data.aws_alb.existing), lb_name) * 8,
+        y      = 3 + index(keys(data.aws_lb.application_lb), lb_name) * 8,
         width  = 6,
         height = 6,
         properties = {
           metrics = [
-            for tg_arn in local.target_groups[lb_name] : [
+            for tg_arn in local.alb_target_groups[lb_name] : [
               "AWS/ApplicationELB",
               "HealthyHostCount",
               "TargetGroup", tg_arn,
@@ -110,13 +118,106 @@ locals {
       }
   ]])
 
+  network_lb_widgets = flatten([
+    for nlb_name, nlb in data.aws_lb.network_lb : [
+      {
+        type   = "text"
+        x      = 0
+        y      = 1 + index(keys(data.aws_lb.network_lb), nlb_name) * 8
+        width  = 24
+        height = 2
+        properties = {
+          markdown   = "## ${nlb.name}\n\n[button:primary:${nlb.name}](https://${data.aws_region.current.name}.console.aws.amazon.com/ec2/home?region=${data.aws_region.current.name}#LoadBalancer:loadBalancerName=${nlb.name})"
+          background = "transparent"
+        }
+      },
+      {
+        type = "metric"
+        x = 0
+        y = 1 + index(keys(data.aws_lb.network_lb), nlb_name) * 8
+        width  = 5
+        height = 6
+        properties = {
+          title = "[NLB] New Flow Count"
+          region  = data.aws_region.current.name
+          metrics = [["AWS/NetworkELB", "NewFlowCount", "LoadBalancer", join("/", slice(split("/", element(split(":", nlb.arn), 5)), 1, 4))]]
+          stat = "Maximum"
+          period  = 60
+        }
+      },
+      {
+        type = "metric"
+        x = 5
+        y = 1 + index(keys(data.aws_lb.network_lb), nlb_name) * 8
+        width  = 5
+        height = 6
+        properties = {
+          title = "[NLB] Active Flow Count"
+          region  = data.aws_region.current.name
+          metrics = [["AWS/NetworkELB", "ActiveFlowCount", "LoadBalancer", join("/", slice(split("/", element(split(":", nlb.arn), 5)), 1, 4))]]
+          stat = "Sum"
+          period  = 60
+        }
+      },
+      {
+        type = "metric"
+        x = 10
+        y = 1 + index(keys(data.aws_lb.network_lb), nlb_name) * 8
+        width  = 5
+        height = 6
+        properties = {
+          title = "[NLB] ConsumedLCUs"
+          region  = data.aws_region.current.name
+          metrics = [["AWS/NetworkELB", "ConsumedLCUs", "LoadBalancer", join("/", slice(split("/", element(split(":", nlb.arn), 5)), 1, 4))]]
+          stat = "Maximum"
+          period  = 60
+        }
+      },
+            {
+        type = "metric"
+        x = 15
+        y = 1 + index(keys(data.aws_lb.network_lb), nlb_name) * 8
+        width  = 5
+        height = 6
+        properties = {
+          title = "[NLB] Processed Packets"
+          region  = data.aws_region.current.name
+          metrics = [["AWS/NetworkELB", "ProcessedPackets", "LoadBalancer", join("/", slice(split("/", element(split(":", nlb.arn), 5)), 1, 4))]]
+          stat = "Sum"
+          period  = 60
+        }
+      },
+      {
+        type = "metric"
+        x = 20
+        y = 1 + index(keys(data.aws_lb.network_lb), nlb_name) * 8
+        width  = 4
+        height = 6
+        properties = {
+          title = "[NLB] HealthyHostCount"
+          region  = data.aws_region.current.name
+          metrics = [
+            for tg_arn in local.nlb_target_groups[nlb_name] : [
+              "AWS/ApplicationELB",
+              "HealthyHostCount",
+              "TargetGroup", tg_arn,
+              "LoadBalancer", join("/", slice(split("/", element(split(":", nlb.arn), 5)), 1, 4))
+            ]
+          ],
+          stat = "Sum"
+          period  = 60
+        }
+      },
+    ]
+  ])
+
   ec2_widgets = flatten([
     for i, instance_id in tolist(data.aws_instances.existing.ids) : concat(
       [
         {
           type   = "text"
           x      = 0
-          y      = 1 + length(data.aws_alb.existing) * 8 + 2 + i * 7 // Adjusted Y coordinate
+          y      = 1 + length(data.aws_lb.application_lb) * 8 + 2 + i * 7 // Adjusted Y coordinate
           width  = 24
           height = 2
           properties = {
@@ -130,7 +231,7 @@ locals {
         {
           type   = "metric"
           x      = 0
-          y      = 1 + length(data.aws_alb.existing) * 8 + 4 + i * 7
+          y      = 1 + length(data.aws_lb.application_lb) * 8 + 4 + i * 7
           width  = 4
           height = 6
           properties = {
@@ -154,7 +255,7 @@ locals {
         {
           type   = "metric"
           x      = 4
-          y      = 1 + length(data.aws_alb.existing) * 8 + 4 + i * 7
+          y      = 1 + length(data.aws_lb.application_lb) * 8 + 4 + i * 7
           width  = 4
           height = 6
           properties = {
@@ -178,7 +279,7 @@ locals {
         {
           type   = "metric"
           x      = 8
-          y      = 1 + length(data.aws_alb.existing) * 8 + 4 + i * 7
+          y      = 1 + length(data.aws_lb.application_lb) * 8 + 4 + i * 7
           width  = 4
           height = 6
           properties = {
@@ -204,7 +305,7 @@ locals {
         {
           type   = "metric"
           x      = 12
-          y      = 1 + length(data.aws_alb.existing) * 8 + 4 + i * 7
+          y      = 1 + length(data.aws_lb.application_lb) * 8 + 4 + i * 7
           width  = 4
           height = 6
           properties = {
@@ -222,7 +323,7 @@ locals {
         {
           type   = "metric"
           x      = 16
-          y      = 1 + length(data.aws_alb.existing) * 8 + 4 + i * 7
+          y      = 1 + length(data.aws_lb.application_lb) * 8 + 4 + i * 7
           width  = 4
           height = 6
           properties = {
@@ -247,7 +348,7 @@ locals {
         {
           type   = "metric"
           x      = 20
-          y      = 1 + length(data.aws_alb.existing) * 8 + 4 + i * 7
+          y      = 1 + length(data.aws_lb.application_lb) * 8 + 4 + i * 7
           width  = 4
           height = 6
           properties = {
@@ -275,7 +376,7 @@ locals {
         {
           type   = "metric"
           x      = 0
-          y      = 1 + length(data.aws_alb.existing) * 8 + 4 + i * 7
+          y      = 1 + length(data.aws_lb.application_lb) * 8 + 4 + i * 7
           width  = 4
           height = 6
           properties = {
@@ -299,7 +400,7 @@ locals {
         {
           type   = "metric"
           x      = 4
-          y      = 1 + length(data.aws_alb.existing) * 8 + 4 + i * 7 // Adjusted Y coordinate
+          y      = 1 + length(data.aws_lb.application_lb) * 8 + 4 + i * 7 // Adjusted Y coordinate
           width  = 4
           height = 6
           properties = {
@@ -323,7 +424,7 @@ locals {
         {
           type   = "metric"
           x      = 8
-          y      = 1 + length(data.aws_alb.existing) * 8 + 4 + i * 7 // Adjusted Y coordinate
+          y      = 1 + length(data.aws_lb.application_lb) * 8 + 4 + i * 7 // Adjusted Y coordinate
           width  = 4
           height = 6
           properties = {
@@ -349,7 +450,7 @@ locals {
         {
           type   = "metric"
           x      = 12
-          y      = 1 + length(data.aws_alb.existing) * 8 + 4 + i * 7 // Adjusted Y coordinate
+          y      = 1 + length(data.aws_lb.application_lb) * 8 + 4 + i * 7 // Adjusted Y coordinate
           width  = 4
           height = 6
           properties = {
@@ -375,7 +476,7 @@ locals {
         {
           type   = "metric"
           x      = 16
-          y      = 1 + length(data.aws_alb.existing) * 8 + 4 + i * 7 // Adjusted Y coordinate
+          y      = 1 + length(data.aws_lb.application_lb) * 8 + 4 + i * 7 // Adjusted Y coordinate
           width  = 4
           height = 6
           properties = {
@@ -393,7 +494,7 @@ locals {
         {
           type   = "metric"
           x      = 20
-          y      = 1 + length(data.aws_alb.existing) * 8 + 4 + i * 7 // Adjusted Y coordinate
+          y      = 1 + length(data.aws_lb.application_lb) * 8 + 4 + i * 7 // Adjusted Y coordinate
           width  = 4
           height = 6
           properties = {
@@ -427,7 +528,7 @@ locals {
         {
           type   = "text"
           x      = 0
-          y      = 1 + length(data.aws_alb.existing) * 9 + length(data.aws_instances.existing.ids) * 8 + 4 + i * 14 // Adjust Y position for header
+          y      = 1 + length(data.aws_lb.application_lb) * 9 + length(data.aws_instances.existing.ids) * 8 + 4 + i * 14 // Adjust Y position for header
           width  = 24
           height = 2
           properties = {
@@ -441,7 +542,7 @@ locals {
         {
           type   = "metric"
           x      = 0
-          y      = 1 + length(data.aws_alb.existing) * 9 + length(data.aws_instances.existing.ids) * 8 + 6 + i * 14
+          y      = 1 + length(data.aws_lb.application_lb) * 9 + length(data.aws_instances.existing.ids) * 8 + 6 + i * 14
           width  = 4
           height = 6
           properties = {
@@ -458,7 +559,7 @@ locals {
         {
           type   = "metric"
           x      = 4
-          y      = 1 + length(data.aws_alb.existing) * 9 + length(data.aws_instances.existing.ids) * 8 + 6 + i * 14
+          y      = 1 + length(data.aws_lb.application_lb) * 9 + length(data.aws_instances.existing.ids) * 8 + 6 + i * 14
           width  = 4
           height = 6
           properties = {
@@ -475,7 +576,7 @@ locals {
         {
           type   = "metric"
           x      = 8
-          y      = 1 + length(data.aws_alb.existing) * 9 + length(data.aws_instances.existing.ids) * 8 + 6 + i * 14
+          y      = 1 + length(data.aws_lb.application_lb) * 9 + length(data.aws_instances.existing.ids) * 8 + 6 + i * 14
           width  = 4
           height = 6
           properties = {
@@ -492,7 +593,7 @@ locals {
         {
           type   = "metric"
           x      = 12
-          y      = 1 + length(data.aws_alb.existing) * 9 + length(data.aws_instances.existing.ids) * 8 + 6 + i * 14
+          y      = 1 + length(data.aws_lb.application_lb) * 9 + length(data.aws_instances.existing.ids) * 8 + 6 + i * 14
           width  = 4
           height = 6
           properties = {
@@ -511,7 +612,7 @@ locals {
         {
           type   = "metric"
           x      = 16
-          y      = 1 + length(data.aws_alb.existing) * 9 + length(data.aws_instances.existing.ids) * 8 + 6 + i * 14
+          y      = 1 + length(data.aws_lb.application_lb) * 9 + length(data.aws_instances.existing.ids) * 8 + 6 + i * 14
           width  = 4
           height = 6
           properties = {
@@ -529,7 +630,7 @@ locals {
         {
           type   = "metric"
           x      = 20
-          y      = 1 + length(data.aws_alb.existing) * 9 + length(data.aws_instances.existing.ids) * 8 + 6 + i * 14
+          y      = 1 + length(data.aws_lb.application_lb) * 9 + length(data.aws_instances.existing.ids) * 8 + 6 + i * 14
           width  = 4
           height = 6
           properties = {
@@ -547,15 +648,12 @@ locals {
       ]
     )
   ])
-
-  
 }
 
 resource "aws_cloudwatch_dashboard" "monitoring_dashboard" {
   dashboard_name = "${var.name}-dashboard-${var.env}"
   dashboard_body = jsonencode({
     widgets = concat(
-      // Load Balancer Metrics Header
       [
         {
           type   = "text"
@@ -564,18 +662,32 @@ resource "aws_cloudwatch_dashboard" "monitoring_dashboard" {
           width  = 24
           height = 1
           properties = {
-            markdown   = "# Load Balancer Metrics\n\n"
+            markdown   = "# Application Load Balancer Metrics\n\n"
             background = "transparent"
           }
         }
       ],
-      local.load_balancer_widgets,
+      local.application_lb_widgets,
+      [
+        {
+          type   = "text"
+          x      = 0
+          y      = 1 + length(data.aws_lb.application_lb) * 8 + 1
+          width  = 24
+          height = 1
+          properties = {
+            markdown   = "# Network Load Balancer Metrics\n\n"
+            background = "transparent"
+          }
+        }
+      ],
+      local.network_lb_widgets,
       // EC2 Metrics Header
       [
         {
           type   = "text"
           x      = 0
-          y      = 1 + length(data.aws_alb.existing) * 8 + 1
+          y      = 1 + length(data.aws_lb.application_lb) * 8 + 1
           width  = 24
           height = 1
           properties = {
@@ -589,7 +701,7 @@ resource "aws_cloudwatch_dashboard" "monitoring_dashboard" {
         {
           type   = "text"
           x      = 0
-          y      = 1 + length(data.aws_alb.existing) * 9 + length(data.aws_instances.existing.ids) * 8 + 2
+          y      = 1 + length(data.aws_lb.application_lb) * 9 + length(data.aws_instances.existing.ids) * 8 + 2
           width  = 24
           height = 1
           properties = {

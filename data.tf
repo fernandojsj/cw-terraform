@@ -15,12 +15,22 @@ data "aws_instance" "detailed" {
 }
 
 
-# ==========load balancers==========
+# ==========application load balancers==========
 data "external" "load_balancers" {
   program = ["python3", "./scripts/get_application_load_balancers.py"]
 }
-data "aws_alb" "existing" {
+data "aws_lb" "application_lb" {
   for_each = toset(keys(data.external.load_balancers.result))
+  name     = each.key
+}
+
+
+# ==========network load balancers==========
+data "external" "network_load_balancers" {
+  program = ["python3", "./scripts/get_network_load_balancers.py"]
+}
+data "aws_lb" "network_lb" {
+  for_each = toset(keys(data.external.network_load_balancers.result))
   name     = each.key
 }
 

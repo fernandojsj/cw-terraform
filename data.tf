@@ -37,7 +37,7 @@ data "aws_lb" "network_lb" {
 
 # ==========target groups==========
 data "external" "Map_of_targetGroups" {
-  program = [ "python3", "./scripts/get_target_groups.py" ]
+  program = ["python3", "./scripts/get_target_groups.py"]
 }
 
 

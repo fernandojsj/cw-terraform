@@ -1,4 +1,4 @@
-name       = "monitor"
+name       = "paulista"
 env        = "prd"
 aws_region = "us-east-1"
 

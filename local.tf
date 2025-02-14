@@ -407,6 +407,8 @@ locals {
             ]
             stat   = "Maximum"
             period = 60
+            annotations = {
+           }
           }
         },
         {
@@ -428,7 +430,7 @@ locals {
                 {
                   color = "#ff0000"
                   label = "Alert"
-                  value = 80
+                  value = 1
                 }
               ]
             }
@@ -453,7 +455,7 @@ locals {
                 {
                   color = "#ff0000"
                   label = "Alert"
-                  value = 80
+                  value = 1
                 }
               ]
             }
@@ -577,6 +579,8 @@ locals {
             ]
             stat   = "Maximum"
             period = 60
+            annotations = {
+           }
           }
         },
         {
@@ -599,7 +603,7 @@ locals {
                 {
                   color = "#ff0000"
                   label = "Alert"
-                  value = 80
+                  value = 1
                 }
               ]
             }

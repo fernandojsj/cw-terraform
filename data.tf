@@ -4,16 +4,17 @@ data "aws_region" "current" {}
 
 # ==========instâncias EC2==========
 data "aws_instances" "existing" {
+
   filter {
-    name   = "instance-state-name"
-    values = ["running"]
+    name   = "tag:OS"
+    values = ["Windows", "Linux"]
   }
 }
+
 data "aws_instance" "detailed" {
   for_each    = toset(data.aws_instances.existing.ids)
   instance_id = each.value
 }
-
 
 # ==========application load balancers==========
 data "external" "load_balancers" {

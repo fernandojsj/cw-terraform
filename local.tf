@@ -349,12 +349,16 @@ locals {
           width  = 4
           height = 6
           properties = {
-            title   = "[EC2] Memory Utilization"
-            region  = data.aws_region.current.name
-            metrics = [["CWAgent", "mem_used_percent", "InstanceId", instance_id, "ImageId", data.aws_instance.detailed[instance_id].ami, "InstanceType", data.aws_instance.detailed[instance_id].instance_type]]
-            stat    = "Maximum"
-            period  = 60
-            yAxis   = { left = { min = 0, max = 100 } }
+            title  = "[EC2] Memory Utilization"
+            region = data.aws_region.current.name
+            metrics = lookup(data.aws_instance.detailed[instance_id].tags, "OS", "Linux") == "Windows" ? [
+      ["CWAgent", "Memory % Committed Bytes In Use", "InstanceId", instance_id, "ImageId", data.aws_instance.detailed[instance_id].ami, "objectname", "Memory", "InstanceType", data.aws_instance.detailed[instance_id].instance_type]
+    ] : [
+      ["CWAgent", "mem_used_percent", "InstanceId", instance_id, "ImageId", data.aws_instance.detailed[instance_id].ami, "InstanceType", data.aws_instance.detailed[instance_id].instance_type]
+    ]
+            stat   = "Maximum"
+            period = 60
+            yAxis  = { left = { min = 0, max = 100 } }
             annotations = {
               horizontal = [
                 {
@@ -375,9 +379,12 @@ locals {
           properties = {
             title  = "[EC2] Disk Utilization"
             region = data.aws_region.current.name
-            metrics = [
-              ["CWAgent", "disk_used_percent", "path", "/", "InstanceId", instance_id, "ImageId", data.aws_instance.detailed[instance_id].ami, "InstanceType", data.aws_instance.detailed[instance_id].instance_type, "device", lookup(data.aws_instance.detailed[instance_id].tags, "OS", "") == "Windows" ? "xvda1" : "nvme0n1p1", "fstype", "ext4"]
-            ]
+ metrics = lookup(data.aws_instance.detailed[instance_id].tags, "OS", "Linux") == "Windows" ? [
+      ["CWAgent", "LogicalDisk % Free Space", "instance", "C:", "InstanceId", instance_id, "ImageId", data.aws_instance.detailed[instance_id].ami, "objectname", "LogicalDisk", "InstanceType", data.aws_instance.detailed[instance_id].instance_type]
+    ] : [
+      ["CWAgent", "disk_used_percent", "path", "/", "InstanceId", instance_id, "ImageId", data.aws_instance.detailed[instance_id].ami, "InstanceType", data.aws_instance.detailed[instance_id].instance_type, "device", "nvme0n1p1", "fstype", "ext4"]
+    ]
+
             stat   = "Maximum"
             period = 60
             yAxis  = { left = { min = 0, max = 100 } }
@@ -386,7 +393,7 @@ locals {
                 {
                   color = "#ff0000"
                   label = "Alert"
-                  value = 80
+                  value = lookup(data.aws_instance.detailed[instance_id].tags, "OS", "Linux") == "Windows" ? 20 : 80
                 }
               ]
             }
@@ -408,7 +415,7 @@ locals {
             stat   = "Maximum"
             period = 60
             annotations = {
-           }
+            }
           }
         },
         {
@@ -495,12 +502,16 @@ locals {
           width  = 4
           height = 6
           properties = {
-            title   = "[EC2] Memory Utilization"
-            region  = data.aws_region.current.name
-            metrics = [["CWAgent", "mem_used_percent", "InstanceId", instance_id, "ImageId", data.aws_instance.detailed[instance_id].ami, "InstanceType", data.aws_instance.detailed[instance_id].instance_type]]
-            stat    = "Maximum"
-            period  = 60
-            yAxis   = { left = { min = 0, max = 100 } }
+            title  = "[EC2] Memory Utilization"
+            region = data.aws_region.current.name
+           metrics = lookup(data.aws_instance.detailed[instance_id].tags, "OS", "Linux") == "Windows" ? [
+      ["CWAgent", "Memory % Committed Bytes In Use", "InstanceId", instance_id, "ImageId", data.aws_instance.detailed[instance_id].ami, "objectname", "Memory", "InstanceType", data.aws_instance.detailed[instance_id].instance_type]
+    ] : [
+      ["CWAgent", "mem_used_percent", "InstanceId", instance_id, "ImageId", data.aws_instance.detailed[instance_id].ami, "InstanceType", data.aws_instance.detailed[instance_id].instance_type]
+    ]
+            stat   = "Maximum"
+            period = 60
+            yAxis  = { left = { min = 0, max = 100 } }
             annotations = {
               horizontal = [
                 {
@@ -521,9 +532,12 @@ locals {
           properties = {
             title  = "[EC2] Disk Utilization"
             region = data.aws_region.current.name
-            metrics = [
-              ["CWAgent", "disk_used_percent", "path", "/", "InstanceId", instance_id, "ImageId", data.aws_instance.detailed[instance_id].ami, "InstanceType", data.aws_instance.detailed[instance_id].instance_type, "device", lookup(data.aws_instance.detailed[instance_id].tags, "OS", "") == "Windows" ? "xvda1" : "nvme0n1p1", "fstype", "ext4"]
-            ]
+            metrics = lookup(data.aws_instance.detailed[instance_id].tags, "OS", "Linux") == "Windows" ? [
+      ["CWAgent", "LogicalDisk % Free Space", "instance", "C:", "InstanceId", instance_id, "ImageId", data.aws_instance.detailed[instance_id].ami, "objectname", "LogicalDisk", "InstanceType", data.aws_instance.detailed[instance_id].instance_type]
+    ] : [
+      ["CWAgent", "disk_used_percent", "path", "/", "InstanceId", instance_id, "ImageId", data.aws_instance.detailed[instance_id].ami, "InstanceType", data.aws_instance.detailed[instance_id].instance_type, "device", "nvme0n1p1", "fstype", "ext4"]
+    ]
+
             stat   = "Maximum"
             period = 60
             yAxis  = { left = { min = 0, max = 100 } }
@@ -532,7 +546,7 @@ locals {
                 {
                   color = "#ff0000"
                   label = "Alert"
-                  value = 80
+                  value = lookup(data.aws_instance.detailed[instance_id].tags, "OS", "Linux") == "Windows" ? 20 : 80
                 }
               ]
             }
@@ -580,7 +594,7 @@ locals {
             stat   = "Maximum"
             period = 60
             annotations = {
-           }
+            }
           }
         },
         {

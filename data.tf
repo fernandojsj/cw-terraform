@@ -41,7 +41,6 @@ data "external" "Map_of_targetGroups" {
   program = ["python3", "./scripts/get_target_groups.py"]
 }
 
-
 # =====RDS=====
 data "external" "RDS" {
   program = ["python3", "./scripts/get_rds.py"]

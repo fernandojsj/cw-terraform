@@ -1,7 +1,7 @@
-name       = "teste"
-env        = "prd"
 aws_region = "us-east-1"
+customer_name    = "esatto"
+environment      = "prd"
 
-customer_name = "teste"
-environment = "prd"
-alarm_action_arn = "arn:aws:sns:us-east-1:585768140526:paulista-monitor-cw"
+alarm_action_arn = "arn:aws:sns:us-east-1:102306345761:CLOUDWATCH-VALIDACAO"
+rds_alarm_action_arn = "arn:aws:sns:us-east-1:102306345761:CLOUDWATCH-VALIDACAO-RDS"
+

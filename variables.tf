@@ -1,16 +1,4 @@
-variable "env" {
-  type = string
-}
-
-variable "name" {
-  type = string
-}
-
-variable "aws_region" {
-  type = string
-}
-
-################## ALARME CW ##########################
+################## VARIÁVEIS PRINCIPAIS ##########################
 
 variable "customer_name" {
   type = string
@@ -22,4 +10,13 @@ variable "environment" {
 
 variable "alarm_action_arn" {
   type = string
+}
+
+variable "aws_region" {
+  type = string  
+}
+
+variable "rds_alarm_action_arn" {
+  type = string
+  default = null
 }

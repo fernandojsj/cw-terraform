@@ -54,7 +54,7 @@ resource "aws_cloudwatch_dashboard" "monitoring_dashboard" {
       local.ec2_widgets,
 
       // Cabeçalho RDS (incluso se existir pelo menos 1 RDS)
-      length(local.map_of_rds.rds_list) > 0 ? [
+      length(local.RDS.rds_list) > 0 ? [
         {
           type   = "text"
           x      = 0
@@ -68,7 +68,58 @@ resource "aws_cloudwatch_dashboard" "monitoring_dashboard" {
         }
       ] : [],
       // Widgets RDS
-      local.rds_widgets
+      local.rds_widgets,
+
+      // Cabeçalho Aurora Provisioned
+      length(local.Aurora.provisioned) > 0 ? [
+        {
+          type   = "text"
+          x      = 0
+          y      = local.aurora_provisioned_header_y
+          width  = 24
+          height = 1
+          properties = {
+            markdown   = "# Aurora Provisioned Metrics\n\n"
+            background = "transparent"
+          }
+        }
+      ] : [],
+      // Widgets Aurora Provisioned
+      local.aurora_provisioned_widgets,
+
+      // Cabeçalho Aurora Serverless V1
+      length(local.Aurora.serverless_v1) > 0 ? [
+        {
+          type   = "text"
+          x      = 0
+          y      = local.aurora_serverless_v1_header_y
+          width  = 24
+          height = 1
+          properties = {
+            markdown   = "# Aurora Serverless V1 Metrics\n\n"
+            background = "transparent"
+          }
+        }
+      ] : [],
+      // Widgets Aurora Serverless V1
+      local.aurora_serverless_v1_widgets,
+
+      // Cabeçalho Aurora Serverless V2
+      length(local.Aurora.serverless_v2) > 0 ? [
+        {
+          type   = "text"
+          x      = 0
+          y      = local.aurora_serverless_v2_header_y
+          width  = 24
+          height = 1
+          properties = {
+            markdown   = "# Aurora Serverless V2 Metrics\n\n"
+            background = "transparent"
+          }
+        }
+      ] : [],
+      // Widgets Aurora Serverless V2
+      local.aurora_serverless_v2_widgets
     )
   })
 }

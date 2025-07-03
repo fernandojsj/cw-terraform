@@ -54,6 +54,31 @@ Módulo Terraform para criação automática de dashboards CloudWatch com monito
 - Read/Write IOPS (widget maior: 8 width)
 - Read/Write Throughput (widget maior: 8 width)
 
+### Aurora Clusters
+**Aurora Provisioned**:
+- CPU Utilization
+- Free Memory
+- Free Storage Space
+- Read/Write Latency
+- Database Connections
+- Read/Write IOPS (widget maior: 8 width)
+- Read/Write Throughput (widget maior: 8 width)
+
+**Aurora Serverless V1**:
+- **Database Capacity** (ACUs - Aurora Capacity Units)
+- Database Connections
+- Read/Write Latency
+- Read/Write IOPS
+
+**Aurora Serverless V2**:
+- **Database Capacity** (ACUs - Aurora Capacity Units)
+- CPU Utilization
+- Free Memory
+- Read/Write Latency
+- Database Connections
+- Read/Write IOPS (widget maior: 8 width)
+- Read/Write Throughput (widget maior: 8 width)
+
 ## Configuração Obrigatória
 
 ### Tag OS para EC2
@@ -77,23 +102,105 @@ O módulo calcula automaticamente o `max_connections` baseado na engine:
 
 Threshold de alerta: **80%** do valor calculado
 
-## Uso
+## Uso do Módulo
 
 ```hcl
 module "cloudwatch_dashboard" {
-  source = "./terraform-aws-clouddog-cw"
+  source  = ""
   
-  aws_region = "us-east-1"
-  # outras variáveis...
+  # Variáveis obrigatórias
+  customer_name    = "minha-empresa"
+  environment      = "production"
+  
+  # Variáveis opcionais
+  aws_region           = "us-east-1"  # Se não informado, usa região atual
+  rds_alarm_action_arn = aws_sns_topic.rds_alerts.arn  # Opcional, usa alarm_action_arn se não informado
+  alarm_action_arn     = aws_sns_topic.alerts.arn
 }
 ```
+
+## Variáveis
+
+| Nome | Descrição | Tipo | Obrigatório | Padrão |
+|------|-----------|------|-------------|--------|
+| `customer_name` | Nome do cliente para identificação do dashboard | `string` | ✅ | - |
+| `environment` | Ambiente (dev, staging, prod, etc.) | `string` | ✅ | - |
+| `alarm_action_arn` | ARN da ação do alarme - **Opcional**: se não fornecido, alarmes não serão criados | `string` | ❌ | `null` |
+| `aws_region` | Região AWS onde os recursos estão localizados | `string` | ❌ | Região atual |
+| `rds_alarm_action_arn` | ARN específico para alarmes RDS - **Opcional**- | `string` | ❌ | `null` |
+
+## Outputs
+
+| Nome | Descrição |
+|------|----------|
+| `dashboard_name` | Nome do dashboard CloudWatch criado |
+| `dashboard_url` | URL do dashboard no console AWS |
+| `monitored_resources` | Resumo dos recursos monitorados |
 
 ## Scripts Python
 O módulo utiliza scripts Python para descoberta automática de recursos:
 - `get_application_load_balancers.py`
 - `get_network_load_balancers.py` 
 - `get_rds.py`
+- `get_aurora.py`
 - `get_target_groups.py`
+
+## Pré-requisitos
+
+### 1. Tag OS Obrigatória para EC2
+
+Todas as instâncias EC2 **DEVEM** ter a tag `OS`:
+
+```hcl
+resource "aws_instance" "example" {
+  # ... outras configurações
+  
+  tags = {
+    OS = "Linux"    # ou "Windows"
+    Name = "minha-instancia"
+  }
+}
+```
+
+### 2. Permissões IAM
+O usuário/role deve ter as seguintes permissões:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "cloudwatch:*",
+        "ec2:Describe*",
+        "elasticloadbalancing:Describe*",
+        "rds:Describe*"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+### 1. Estrutura do Repositório
+```
+terraform-aws-cloudwatch-dashboard/
+├── main.tf
+├── variables.tf
+├── outputs.tf
+├── versions.tf
+├── data.tf
+├── locals.tf
+├── widgets.tf
+├── alarms.tf
+├── README.md
+└── scripts/
+    ├── get_application_load_balancers.py
+    ├── get_network_load_balancers.py
+    ├── get_rds.py
+    ├── get_aurora.py
+    └── get_target_groups.py
+```
 
 ## Pontos Importantes
 
@@ -103,6 +210,10 @@ O módulo utiliza scripts Python para descoberta automática de recursos:
 4. **Widgets Responsivos**: Layout ajusta automaticamente baseado no número de recursos
 5. **Compatibilidade**: Suporta AWS Provider 5.x
 6. **CloudWatch Agent**: Necessário para métricas de memória e disco do EC2
+7. **Aurora Serverless**: Métricas específicas para V1 (capacity-based) e V2 (hybrid)
+8. **Descoberta Automática**: Aurora clusters são categorizados automaticamente por tipo
+9. **⚠️ Alarmes Aurora**: Não são criados alarmes automáticos para Aurora. Se necessário, adicione manualmente no console AWS
+10. **🔔 Alarmes Opcionais**: Alarmes só são criados se `alarm_action_arn` for fornecido. Sem ARN = apenas dashboard
 
 ## Estrutura de Arquivos
 
@@ -116,4 +227,9 @@ O módulo utiliza scripts Python para descoberta automática de recursos:
 ├── outputs.tf           # Outputs do módulo
 ├── versions.tf          # Versões dos providers
 └── scripts/             # Scripts Python para descoberta
+    ├── get_application_load_balancers.py
+    ├── get_network_load_balancers.py
+    ├── get_rds.py
+    ├── get_aurora.py    
+    └── get_target_groups.py
 ```

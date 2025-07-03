@@ -1,5 +1,6 @@
 # ==========Região atual==========
 data "aws_region" "current" {}
+data "aws_caller_identity" "current" {}
 
 
 # ==========instâncias EC2==========
@@ -44,4 +45,9 @@ data "external" "Map_of_targetGroups" {
 # =====RDS=====
 data "external" "RDS" {
   program = ["python3", "./scripts/get_rds.py"]
+}
+
+# =====Aurora=====
+data "external" "Aurora" {
+  program = ["python3", "./scripts/get_aurora.py"]
 }

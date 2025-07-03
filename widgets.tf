@@ -201,12 +201,12 @@ locals {
           width  = 4
           height = 6
           properties = {
-            title   = "[EC2] CPU Utilization"
-            region  = data.aws_region.current.name
-            metrics = [["AWS/EC2", "CPUUtilization", "InstanceId", instance_id]]
-            stat    = "Maximum"
-            period  = 60
-            yAxis   = { left = { min = 0, max = 100 } }
+            title       = "[EC2] CPU Utilization"
+            region      = data.aws_region.current.name
+            metrics     = [["AWS/EC2", "CPUUtilization", "InstanceId", instance_id]]
+            stat        = "Maximum"
+            period      = 60
+            yAxis       = { left = { min = 0, max = 100 } }
             annotations = { horizontal = [{ color = "#ff0000", label = "Alert", value = 80 }] }
           }
         },
@@ -221,12 +221,12 @@ locals {
             region = data.aws_region.current.name
             metrics = lookup(data.aws_instance.detailed[instance_id].tags, "OS", "Linux") == "Windows" ? [
               ["CWAgent", "Memory % Committed Bytes In Use", "InstanceId", instance_id, "ImageId", data.aws_instance.detailed[instance_id].ami, "objectname", "Memory", "InstanceType", data.aws_instance.detailed[instance_id].instance_type]
-            ] : [
+              ] : [
               ["CWAgent", "mem_used_percent", "InstanceId", instance_id, "ImageId", data.aws_instance.detailed[instance_id].ami, "InstanceType", data.aws_instance.detailed[instance_id].instance_type]
             ]
-            stat   = "Maximum"
-            period = 60
-            yAxis  = { left = { min = 0, max = 100 } }
+            stat        = "Maximum"
+            period      = 60
+            yAxis       = { left = { min = 0, max = 100 } }
             annotations = { horizontal = [{ color = "#ff0000", label = "Alert", value = 80 }] }
           }
         },
@@ -241,12 +241,12 @@ locals {
             region = data.aws_region.current.name
             metrics = lookup(data.aws_instance.detailed[instance_id].tags, "OS", "Linux") == "Windows" ? [
               ["CWAgent", "LogicalDisk % Free Space", "instance", "C:", "InstanceId", instance_id, "ImageId", data.aws_instance.detailed[instance_id].ami, "objectname", "LogicalDisk", "InstanceType", data.aws_instance.detailed[instance_id].instance_type]
-            ] : [
+              ] : [
               ["CWAgent", "disk_used_percent", "path", "/", "InstanceId", instance_id, "ImageId", data.aws_instance.detailed[instance_id].ami, "InstanceType", data.aws_instance.detailed[instance_id].instance_type, "device", "nvme0n1p1", "fstype", "ext4"]
             ]
-            stat   = "Maximum"
-            period = 60
-            yAxis  = { left = { min = 0, max = 100 } }
+            stat        = "Maximum"
+            period      = 60
+            yAxis       = { left = { min = 0, max = 100 } }
             annotations = { horizontal = [{ color = "#ff0000", label = "Alert", value = lookup(data.aws_instance.detailed[instance_id].tags, "OS", "Linux") == "Windows" ? 20 : 80 }] }
           }
         },
@@ -263,12 +263,12 @@ locals {
               ["AWS/EC2", "CPUCreditUsage", "InstanceId", instance_id],
               ["AWS/EC2", "CPUCreditBalance", "InstanceId", instance_id]
             ]
-            stat   = "Maximum"
-            period = 60
-            yAxis  = { left = { min = 0, max = lookup(local.ec2_instances_credit, data.aws_instance.detailed[instance_id].instance_type, 0) } }
+            stat        = "Maximum"
+            period      = 60
+            yAxis       = { left = { min = 0, max = lookup(local.ec2_instances_credit, data.aws_instance.detailed[instance_id].instance_type, 0) } }
             annotations = { horizontal = [{ color = "#ff0000", label = "Alert", value = floor(lookup(local.ec2_instances_credit, data.aws_instance.detailed[instance_id].instance_type, 0) * 0.5) }] }
           }
-        } : {
+          } : {
           type   = "metric"
           x      = 12
           y      = local.ec2_header_y + 3 + i * 7
@@ -281,9 +281,9 @@ locals {
               ["AWS/EC2", "NetworkIn", "InstanceId", instance_id],
               ["AWS/EC2", "NetworkOut", "InstanceId", instance_id]
             ]
-            stat   = "Maximum"
-            period = 60
-            yAxis  = { left = { min = 0, max = 1000 } }
+            stat        = "Maximum"
+            period      = 60
+            yAxis       = { left = { min = 0, max = 1000 } }
             annotations = { horizontal = [] }
           }
         },
@@ -299,11 +299,11 @@ locals {
             metrics = startswith(data.aws_instance.detailed[instance_id].instance_type, "t") ? [
               ["AWS/EC2", "NetworkIn", "InstanceId", instance_id],
               ["AWS/EC2", "NetworkOut", "InstanceId", instance_id]
-            ] : [
+              ] : [
               ["AWS/EC2", "StatusCheckFailed", "InstanceId", instance_id]
             ]
-            stat   = "Maximum"
-            period = 60
+            stat        = "Maximum"
+            period      = 60
             annotations = { horizontal = startswith(data.aws_instance.detailed[instance_id].instance_type, "t") ? [] : [{ color = "#ff0000", label = "Alert", value = 1 }] }
           }
         },
@@ -319,11 +319,11 @@ locals {
             metrics = startswith(data.aws_instance.detailed[instance_id].instance_type, "t") ? [
               ["AWS/EC2", "StatusCheckFailed", "InstanceId", instance_id],
               ["AWS/EC2", "StatusCheckFailed_AttachedEBS", "InstanceId", instance_id]
-            ] : [
+              ] : [
               ["AWS/EC2", "StatusCheckFailed_AttachedEBS", "InstanceId", instance_id]
             ]
-            stat   = "Maximum"
-            period = 60
+            stat        = "Maximum"
+            period      = 60
             annotations = { horizontal = [{ color = "#ff0000", label = "Alert", value = 1 }] }
           }
         }
@@ -355,13 +355,13 @@ locals {
             width  = 6
             height = 6
             properties = {
-              metrics = [["AWS/RDS", "CPUUtilization", "DBInstanceIdentifier", rds_instance.id]]
-              view    = "timeSeries"
-              stat    = "Average"
-              region  = data.aws_region.current.name
-              period  = 60
-              title   = "[RDS] CPU Utilization"
-              yAxis   = { left = { min = 0, max = 100 } }
+              metrics     = [["AWS/RDS", "CPUUtilization", "DBInstanceIdentifier", rds_instance.id]]
+              view        = "timeSeries"
+              stat        = "Average"
+              region      = data.aws_region.current.name
+              period      = 60
+              title       = "[RDS] CPU Utilization"
+              yAxis       = { left = { min = 0, max = 100 } }
               annotations = { horizontal = [{ color = "#ff0000", label = "Alert", value = 80 }] }
             }
           },
@@ -372,12 +372,12 @@ locals {
             width  = 6
             height = 6
             properties = {
-              metrics = [["AWS/RDS", "FreeableMemory", "DBInstanceIdentifier", rds_instance.id]]
-              view    = "timeSeries"
-              stat    = "Minimum"
-              region  = data.aws_region.current.name
-              period  = 60
-              title   = "[RDS] Free Memory"
+              metrics     = [["AWS/RDS", "FreeableMemory", "DBInstanceIdentifier", rds_instance.id]]
+              view        = "timeSeries"
+              stat        = "Minimum"
+              region      = data.aws_region.current.name
+              period      = 60
+              title       = "[RDS] Free Memory"
               annotations = { horizontal = [{ color = "#ff0000", label = "Alert", value = lookup(local.db_instance_memory, rds_instance.type, 1) * 1073741824 * 0.2 }] } # 20% da memória em bytes
             }
           },
@@ -388,12 +388,12 @@ locals {
             width  = 6
             height = 6
             properties = {
-              metrics = [["AWS/RDS", "FreeStorageSpace", "DBInstanceIdentifier", rds_instance.id]]
-              view    = "timeSeries"
-              stat    = "Minimum"
-              region  = data.aws_region.current.name
-              period  = 60
-              title   = "[RDS] Free Storage Space"
+              metrics     = [["AWS/RDS", "FreeStorageSpace", "DBInstanceIdentifier", rds_instance.id]]
+              view        = "timeSeries"
+              stat        = "Minimum"
+              region      = data.aws_region.current.name
+              period      = 60
+              title       = "[RDS] Free Storage Space"
               annotations = { horizontal = [{ color = "#ff0000", label = "Alert", value = 10737418240 }] } # 10GB em bytes
             }
           },
@@ -478,20 +478,20 @@ locals {
             width  = 6
             height = 6
             properties = {
-              metrics = [["AWS/RDS", "DatabaseConnections", "DBInstanceIdentifier", rds_instance.id]]
-              view    = "timeSeries"
-              stat    = "Maximum"
-              region  = data.aws_region.current.name
-              period  = 60
-              title   = "[RDS] DB Connections"
-              yAxis   = { left = { min = 0, max = try(local.t_instance_max_connections[rds_instance.id], 100) } }
+              metrics     = [["AWS/RDS", "DatabaseConnections", "DBInstanceIdentifier", rds_instance.id]]
+              view        = "timeSeries"
+              stat        = "Maximum"
+              region      = data.aws_region.current.name
+              period      = 60
+              title       = "[RDS] DB Connections"
+              yAxis       = { left = { min = 0, max = try(local.t_instance_max_connections[rds_instance.id], 100) } }
               annotations = { horizontal = [{ label = "Alert", value = try(floor(local.t_instance_max_connections[rds_instance.id] * 0.7), 70), color = "#FF0000" }] } # 70% das conexões máximas
             }
           }
         ]
       )
     ]),
-    
+
     # RDS Standard Instance widgets
     flatten([
       for i, rds_instance in tolist(local.RDS.rds_list) : concat(
@@ -514,13 +514,13 @@ locals {
             width  = 6
             height = 6
             properties = {
-              metrics = [["AWS/RDS", "CPUUtilization", "DBInstanceIdentifier", rds_instance.id]]
-              view    = "timeSeries"
-              stat    = "Average"
-              region  = data.aws_region.current.name
-              period  = 60
-              title   = "[RDS] CPU Utilization"
-              yAxis   = { left = { min = 0, max = 100 } }
+              metrics     = [["AWS/RDS", "CPUUtilization", "DBInstanceIdentifier", rds_instance.id]]
+              view        = "timeSeries"
+              stat        = "Average"
+              region      = data.aws_region.current.name
+              period      = 60
+              title       = "[RDS] CPU Utilization"
+              yAxis       = { left = { min = 0, max = 100 } }
               annotations = { horizontal = [{ color = "#ff0000", label = "Alert", value = 80 }] }
             }
           },
@@ -531,12 +531,12 @@ locals {
             width  = 6
             height = 6
             properties = {
-              metrics = [["AWS/RDS", "FreeableMemory", "DBInstanceIdentifier", rds_instance.id]]
-              view    = "timeSeries"
-              stat    = "Minimum"
-              region  = data.aws_region.current.name
-              period  = 60
-              title   = "[RDS] Free Memory"
+              metrics     = [["AWS/RDS", "FreeableMemory", "DBInstanceIdentifier", rds_instance.id]]
+              view        = "timeSeries"
+              stat        = "Minimum"
+              region      = data.aws_region.current.name
+              period      = 60
+              title       = "[RDS] Free Memory"
               annotations = { horizontal = [{ color = "#ff0000", label = "Alert", value = lookup(local.db_instance_memory, rds_instance.type, 1) * 1073741824 * 0.2 }] } # 20% da memória em bytes
             }
           },
@@ -547,12 +547,12 @@ locals {
             width  = 6
             height = 6
             properties = {
-              metrics = [["AWS/RDS", "FreeStorageSpace", "DBInstanceIdentifier", rds_instance.id]]
-              view    = "timeSeries"
-              stat    = "Minimum"
-              region  = data.aws_region.current.name
-              period  = 60
-              title   = "[RDS] Free Storage Space"
+              metrics     = [["AWS/RDS", "FreeStorageSpace", "DBInstanceIdentifier", rds_instance.id]]
+              view        = "timeSeries"
+              stat        = "Minimum"
+              region      = data.aws_region.current.name
+              period      = 60
+              title       = "[RDS] Free Storage Space"
               annotations = { horizontal = [{ color = "#ff0000", label = "Alert", value = 10737418240 }] } # 10GB em bytes
             }
           },
@@ -581,13 +581,13 @@ locals {
             width  = 8
             height = 6
             properties = {
-              metrics = [["AWS/RDS", "DatabaseConnections", "DBInstanceIdentifier", rds_instance.id]]
-              view    = "timeSeries"
-              stat    = "Maximum"
-              region  = data.aws_region.current.name
-              period  = 60
-              title   = "[RDS] DB Connections"
-              yAxis   = { left = { min = 0, max = try(local.std_instance_max_connections[rds_instance.id], 100) } }
+              metrics     = [["AWS/RDS", "DatabaseConnections", "DBInstanceIdentifier", rds_instance.id]]
+              view        = "timeSeries"
+              stat        = "Maximum"
+              region      = data.aws_region.current.name
+              period      = 60
+              title       = "[RDS] DB Connections"
+              yAxis       = { left = { min = 0, max = try(local.std_instance_max_connections[rds_instance.id], 100) } }
               annotations = { horizontal = [{ label = "Alert", value = try(floor(local.std_instance_max_connections[rds_instance.id] * 0.7), 70), color = "#FF0000" }] } # 70% das conexões máximas
             }
           },
@@ -631,4 +631,355 @@ locals {
       )
     ])
   )
+
+  # Aurora Provisioned Widgets
+  aurora_provisioned_widgets = flatten([
+    for i, aurora_cluster in tolist(local.Aurora.provisioned) : concat(
+      [{
+        type   = "text"
+        x      = 0
+        y      = local.aurora_provisioned_header_y + i * 14
+        width  = 24
+        height = 2
+        properties = {
+          markdown   = "## ${aurora_cluster.id} (Aurora Provisioned)\n[button:primary:${aurora_cluster.id}](https://${data.aws_region.current.name}.console.aws.amazon.com/rds/home?region=${data.aws_region.current.name}#database:id=${aurora_cluster.id})"
+          background = "transparent"
+        }
+      }],
+      [
+        {
+          type   = "metric"
+          x      = 0
+          y      = local.aurora_provisioned_header_y + 2 + i * 14
+          width  = 6
+          height = 6
+          properties = {
+            metrics = [["AWS/RDS", "CPUUtilization", "DBClusterIdentifier", aurora_cluster.id]]
+            view    = "timeSeries"
+            stat    = "Average"
+            region  = data.aws_region.current.name
+            period  = 60
+            title   = "[Aurora] CPU Utilization"
+          }
+        },
+        {
+          type   = "metric"
+          x      = 6
+          y      = local.aurora_provisioned_header_y + 2 + i * 14
+          width  = 6
+          height = 6
+          properties = {
+            metrics = [["AWS/RDS", "FreeableMemory", "DBClusterIdentifier", aurora_cluster.id]]
+            view    = "timeSeries"
+            stat    = "Minimum"
+            region  = data.aws_region.current.name
+            period  = 60
+            title   = "[Aurora] Free Memory"
+          }
+        },
+        {
+          type   = "metric"
+          x      = 12
+          y      = local.aurora_provisioned_header_y + 2 + i * 14
+          width  = 6
+          height = 6
+          properties = {
+            metrics = [["AWS/RDS", "FreeStorageSpace", "DBClusterIdentifier", aurora_cluster.id]]
+            view    = "timeSeries"
+            stat    = "Minimum"
+            region  = data.aws_region.current.name
+            period  = 60
+            title   = "[Aurora] Free Storage Space"
+          }
+        },
+        {
+          type   = "metric"
+          x      = 18
+          y      = local.aurora_provisioned_header_y + 2 + i * 14
+          width  = 6
+          height = 6
+          properties = {
+            metrics = [
+              ["AWS/RDS", "ReadLatency", "DBClusterIdentifier", aurora_cluster.id],
+              [".", "WriteLatency", ".", aurora_cluster.id]
+            ]
+            view   = "timeSeries"
+            stat   = "Average"
+            region = data.aws_region.current.name
+            period = 60
+            title  = "[Aurora] Read/Write Latency"
+          }
+        },
+        {
+          type   = "metric"
+          x      = 0
+          y      = local.aurora_provisioned_header_y + 8 + i * 14
+          width  = 8
+          height = 6
+          properties = {
+            metrics = [["AWS/RDS", "DatabaseConnections", "DBClusterIdentifier", aurora_cluster.id]]
+            view    = "timeSeries"
+            stat    = "Maximum"
+            region  = data.aws_region.current.name
+            period  = 60
+            title   = "[Aurora] DB Connections"
+          }
+        },
+        {
+          type   = "metric"
+          x      = 8
+          y      = local.aurora_provisioned_header_y + 8 + i * 14
+          width  = 8
+          height = 6
+          properties = {
+            metrics = [
+              ["AWS/RDS", "WriteIOPS", "DBClusterIdentifier", aurora_cluster.id],
+              ["AWS/RDS", "ReadIOPS", "DBClusterIdentifier", aurora_cluster.id]
+            ]
+            view   = "timeSeries"
+            stat   = "Average"
+            region = data.aws_region.current.name
+            period = 60
+            title  = "[Aurora] Read/Write IOPS"
+          }
+        },
+        {
+          type   = "metric"
+          x      = 16
+          y      = local.aurora_provisioned_header_y + 8 + i * 14
+          width  = 8
+          height = 6
+          properties = {
+            metrics = [
+              ["AWS/RDS", "WriteThroughput", "DBClusterIdentifier", aurora_cluster.id],
+              ["AWS/RDS", "ReadThroughput", "DBClusterIdentifier", aurora_cluster.id]
+            ]
+            view   = "timeSeries"
+            stat   = "Average"
+            region = data.aws_region.current.name
+            period = 60
+            title  = "[Aurora] Read/Write Throughput"
+          }
+        }
+      ]
+    )
+  ])
+
+  # Aurora Serverless V1 Widgets
+  aurora_serverless_v1_widgets = flatten([
+    for i, aurora_cluster in tolist(local.Aurora.serverless_v1) : concat(
+      [{
+        type   = "text"
+        x      = 0
+        y      = local.aurora_serverless_v1_header_y + i * 10
+        width  = 24
+        height = 2
+        properties = {
+          markdown   = "## ${aurora_cluster.id} (Aurora Serverless V1)\n[button:primary:${aurora_cluster.id}](https://${data.aws_region.current.name}.console.aws.amazon.com/rds/home?region=${data.aws_region.current.name}#database:id=${aurora_cluster.id})"
+          background = "transparent"
+        }
+      }],
+      [
+        {
+          type   = "metric"
+          x      = 0
+          y      = local.aurora_serverless_v1_header_y + 2 + i * 10
+          width  = 6
+          height = 8
+          properties = {
+            metrics = [["AWS/RDS", "ServerlessDatabaseCapacity", "DBClusterIdentifier", aurora_cluster.id]]
+            view    = "timeSeries"
+            stat    = "Average"
+            region  = data.aws_region.current.name
+            period  = 60
+            title   = "[Aurora Serverless] Database Capacity"
+          }
+        },
+        {
+          type   = "metric"
+          x      = 6
+          y      = local.aurora_serverless_v1_header_y + 2 + i * 10
+          width  = 6
+          height = 8
+          properties = {
+            metrics = [["AWS/RDS", "DatabaseConnections", "DBClusterIdentifier", aurora_cluster.id]]
+            view    = "timeSeries"
+            stat    = "Maximum"
+            region  = data.aws_region.current.name
+            period  = 60
+            title   = "[Aurora Serverless] DB Connections"
+          }
+        },
+        {
+          type   = "metric"
+          x      = 12
+          y      = local.aurora_serverless_v1_header_y + 2 + i * 10
+          width  = 6
+          height = 8
+          properties = {
+            metrics = [
+              ["AWS/RDS", "ReadLatency", "DBClusterIdentifier", aurora_cluster.id],
+              [".", "WriteLatency", ".", aurora_cluster.id]
+            ]
+            view   = "timeSeries"
+            stat   = "Average"
+            region = data.aws_region.current.name
+            period = 60
+            title  = "[Aurora Serverless] Read/Write Latency"
+          }
+        },
+        {
+          type   = "metric"
+          x      = 18
+          y      = local.aurora_serverless_v1_header_y + 2 + i * 10
+          width  = 6
+          height = 8
+          properties = {
+            metrics = [
+              ["AWS/RDS", "WriteIOPS", "DBClusterIdentifier", aurora_cluster.id],
+              ["AWS/RDS", "ReadIOPS", "DBClusterIdentifier", aurora_cluster.id]
+            ]
+            view   = "timeSeries"
+            stat   = "Average"
+            region = data.aws_region.current.name
+            period = 60
+            title  = "[Aurora Serverless] Read/Write IOPS"
+          }
+        }
+      ]
+    )
+  ])
+
+  # Aurora Serverless V2 Widgets
+  aurora_serverless_v2_widgets = flatten([
+    for i, aurora_cluster in tolist(local.Aurora.serverless_v2) : concat(
+      [{
+        type   = "text"
+        x      = 0
+        y      = local.aurora_serverless_v2_header_y + i * 14
+        width  = 24
+        height = 2
+        properties = {
+          markdown   = "## ${aurora_cluster.id} (Aurora Serverless V2)\n[button:primary:${aurora_cluster.id}](https://${data.aws_region.current.name}.console.aws.amazon.com/rds/home?region=${data.aws_region.current.name}#database:id=${aurora_cluster.id})"
+          background = "transparent"
+        }
+      }],
+      [
+        {
+          type   = "metric"
+          x      = 0
+          y      = local.aurora_serverless_v2_header_y + 2 + i * 14
+          width  = 6
+          height = 6
+          properties = {
+            metrics = [["AWS/RDS", "ServerlessDatabaseCapacity", "DBClusterIdentifier", aurora_cluster.id]]
+            view    = "timeSeries"
+            stat    = "Average"
+            region  = data.aws_region.current.name
+            period  = 60
+            title   = "[Aurora Serverless V2] Database Capacity"
+          }
+        },
+        {
+          type   = "metric"
+          x      = 6
+          y      = local.aurora_serverless_v2_header_y + 2 + i * 14
+          width  = 6
+          height = 6
+          properties = {
+            metrics = [["AWS/RDS", "CPUUtilization", "DBClusterIdentifier", aurora_cluster.id]]
+            view    = "timeSeries"
+            stat    = "Average"
+            region  = data.aws_region.current.name
+            period  = 60
+            title   = "[Aurora Serverless V2] CPU Utilization"
+          }
+        },
+        {
+          type   = "metric"
+          x      = 12
+          y      = local.aurora_serverless_v2_header_y + 2 + i * 14
+          width  = 6
+          height = 6
+          properties = {
+            metrics = [["AWS/RDS", "FreeableMemory", "DBClusterIdentifier", aurora_cluster.id]]
+            view    = "timeSeries"
+            stat    = "Minimum"
+            region  = data.aws_region.current.name
+            period  = 60
+            title   = "[Aurora Serverless V2] Free Memory"
+          }
+        },
+        {
+          type   = "metric"
+          x      = 18
+          y      = local.aurora_serverless_v2_header_y + 2 + i * 14
+          width  = 6
+          height = 6
+          properties = {
+            metrics = [
+              ["AWS/RDS", "ReadLatency", "DBClusterIdentifier", aurora_cluster.id],
+              [".", "WriteLatency", ".", aurora_cluster.id]
+            ]
+            view   = "timeSeries"
+            stat   = "Average"
+            region = data.aws_region.current.name
+            period = 60
+            title  = "[Aurora Serverless V2] Read/Write Latency"
+          }
+        },
+        {
+          type   = "metric"
+          x      = 0
+          y      = local.aurora_serverless_v2_header_y + 8 + i * 14
+          width  = 8
+          height = 6
+          properties = {
+            metrics = [["AWS/RDS", "DatabaseConnections", "DBClusterIdentifier", aurora_cluster.id]]
+            view    = "timeSeries"
+            stat    = "Maximum"
+            region  = data.aws_region.current.name
+            period  = 60
+            title   = "[Aurora Serverless V2] DB Connections"
+          }
+        },
+        {
+          type   = "metric"
+          x      = 8
+          y      = local.aurora_serverless_v2_header_y + 8 + i * 14
+          width  = 8
+          height = 6
+          properties = {
+            metrics = [
+              ["AWS/RDS", "WriteIOPS", "DBClusterIdentifier", aurora_cluster.id],
+              ["AWS/RDS", "ReadIOPS", "DBClusterIdentifier", aurora_cluster.id]
+            ]
+            view   = "timeSeries"
+            stat   = "Average"
+            region = data.aws_region.current.name
+            period = 60
+            title  = "[Aurora Serverless V2] Read/Write IOPS"
+          }
+        },
+        {
+          type   = "metric"
+          x      = 16
+          y      = local.aurora_serverless_v2_header_y + 8 + i * 14
+          width  = 8
+          height = 6
+          properties = {
+            metrics = [
+              ["AWS/RDS", "WriteThroughput", "DBClusterIdentifier", aurora_cluster.id],
+              ["AWS/RDS", "ReadThroughput", "DBClusterIdentifier", aurora_cluster.id]
+            ]
+            view   = "timeSeries"
+            stat   = "Average"
+            region = data.aws_region.current.name
+            period = 60
+            title  = "[Aurora Serverless V2] Read/Write Throughput"
+          }
+        }
+      ]
+    )
+  ])
 }

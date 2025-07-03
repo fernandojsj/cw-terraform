@@ -1,7 +1,32 @@
-.terraform/*
-.terraform
+# Terraform
 *.tfstate
-*.tfstate.backup
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+.terraform/
 .terraform.lock.hcl
-venv/*
-venv
+crash.log
+crash.*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

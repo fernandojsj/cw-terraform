@@ -1,22 +1,27 @@
-################## VARIÁVEIS PRINCIPAIS ##########################
-
 variable "customer_name" {
-  type = string
+  description = "Nome do cliente para identificação do dashboard"
+  type        = string
 }
 
 variable "environment" {
-  type = string
+  description = "Ambiente (dev, staging, prod, etc.)"
+  type        = string
 }
 
 variable "alarm_action_arn" {
-  type = string
+  description = "ARN da ação do alarme (SNS topic, etc.) - Opcional: se não fornecido, alarmes não serão criados"
+  type        = string
+  default     = null
 }
 
 variable "aws_region" {
-  type = string  
+  description = "Região AWS onde os recursos estão localizados"
+  type        = string
+  default     = null
 }
 
 variable "rds_alarm_action_arn" {
-  type = string
-  default = null
+  description = "ARN específico para alarmes RDS (opcional)"
+  type        = string
+  default     = null
 }

@@ -11,20 +11,23 @@ region = tfvars.get("aws_region")
 # Inicializa o cliente AWS para ELBv2
 client = boto3.client('elbv2', region_name=region)
 
-# Obtém a lista de load balancers
-response = client.describe_load_balancers()
+try:
+    # Obtém a lista de load balancers
+    response = client.describe_load_balancers()
 
-# Filtra apenas os Network Load Balancers (ALBs)
-load_balancers = [
-    lb['LoadBalancerName']
-    for lb in response['LoadBalancers']
-    if lb['Type'] == 'network'  # Filtra ALBs
-]
+    # Filtra apenas os Network Load Balancers (NLBs) com tag Monitoring = True
+    load_balancers = {}
+    for lb in response['LoadBalancers']:
+        if lb['Type'] == 'network':
+            # Verifica as tags do load balancer
+            tags_response = client.describe_tags(ResourceArns=[lb['LoadBalancerArn']])
+            
+            for tag_desc in tags_response['TagDescriptions']:
+                for tag in tag_desc['Tags']:
+                    if tag['Key'] == 'Monitoring' and tag['Value'] == 'True':
+                        load_balancers[lb['LoadBalancerName']] = lb['LoadBalancerName']
+                        break
 
-# Transforma a lista em um mapa de strings
-map_output = {lb: lb for lb in load_balancers}
-
-# Converte o mapa para uma string JSON formatada
-map_output_json = json.dumps(map_output)
-
-print(map_output_json)
+    print(json.dumps(load_balancers))
+except Exception as e:
+    print(json.dumps({}))

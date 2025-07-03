@@ -326,3 +326,96 @@ resource "aws_cloudwatch_metric_alarm" "rds_std_connections" {
   alarm_actions       = [var.rds_alarm_action_arn != null ? var.rds_alarm_action_arn : var.alarm_action_arn]
   ok_actions          = [var.rds_alarm_action_arn != null ? var.rds_alarm_action_arn : var.alarm_action_arn]
 }
+
+# ECS CPU Utilization Alarm
+resource "aws_cloudwatch_metric_alarm" "ecs_cpu_utilization" {
+  for_each = var.alarm_action_arn != null ? {
+    for key, service in flatten([
+      for cluster in concat(local.ECS.with_insights, local.ECS.without_insights) : [
+        for svc in cluster.services : {
+          cluster_name = cluster.name
+          service_name = svc.name
+          key         = "${cluster.name}-${svc.name}"
+        }
+      ]
+    ]) : service.key => service
+  } : {}
+
+  alarm_name          = "${upper(var.customer_name)}_${upper(var.environment)}_ECS_${upper(each.value.cluster_name)}_${upper(each.value.service_name)}_CPU-HIGH"
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/ECS"
+  statistic           = "Maximum"
+  period              = 60
+  evaluation_periods  = 1
+  threshold           = 90
+  comparison_operator = "GreaterThanThreshold"
+  dimensions = {
+    ClusterName = each.value.cluster_name
+    ServiceName = each.value.service_name
+  }
+  alarm_description = "CRITICAL"
+  alarm_actions     = [var.alarm_action_arn]
+  ok_actions        = [var.alarm_action_arn]
+}
+
+# ECS Memory Utilization Alarm
+resource "aws_cloudwatch_metric_alarm" "ecs_memory_utilization" {
+  for_each = var.alarm_action_arn != null ? {
+    for key, service in flatten([
+      for cluster in concat(local.ECS.with_insights, local.ECS.without_insights) : [
+        for svc in cluster.services : {
+          cluster_name = cluster.name
+          service_name = svc.name
+          key         = "${cluster.name}-${svc.name}"
+        }
+      ]
+    ]) : service.key => service
+  } : {}
+
+  alarm_name          = "${upper(var.customer_name)}_${upper(var.environment)}_ECS_${upper(each.value.cluster_name)}_${upper(each.value.service_name)}_MEM-HIGH"
+  metric_name         = "MemoryUtilization"
+  namespace           = "AWS/ECS"
+  statistic           = "Maximum"
+  period              = 60
+  evaluation_periods  = 1
+  threshold           = 90
+  comparison_operator = "GreaterThanThreshold"
+  dimensions = {
+    ClusterName = each.value.cluster_name
+    ServiceName = each.value.service_name
+  }
+  alarm_description = "CRITICAL"
+  alarm_actions     = [var.alarm_action_arn]
+  ok_actions        = [var.alarm_action_arn]
+}
+
+# ECS Running Tasks Alarm
+resource "aws_cloudwatch_metric_alarm" "ecs_running_tasks" {
+  for_each = var.alarm_action_arn != null ? {
+    for key, service in flatten([
+      for cluster in local.ECS.with_insights : [
+        for svc in cluster.services : {
+          cluster_name = cluster.name
+          service_name = svc.name
+          key         = "${cluster.name}-${svc.name}"
+        }
+      ]
+    ]) : service.key => service
+  } : {}
+
+  alarm_name          = "${upper(var.customer_name)}_${upper(var.environment)}_ECS_${upper(each.value.cluster_name)}_${upper(each.value.service_name)}_TASKS-LOW"
+  metric_name         = "RunningTaskCount"
+  namespace           = "ECS/ContainerInsights"
+  statistic           = "Minimum"
+  period              = 60
+  evaluation_periods  = 1
+  threshold           = 0
+  comparison_operator = "LessThanOrEqualToThreshold"
+  dimensions = {
+    ClusterName = each.value.cluster_name
+    ServiceName = each.value.service_name
+  }
+  alarm_description = "CRITICAL"
+  alarm_actions     = [var.alarm_action_arn]
+  ok_actions        = [var.alarm_action_arn]
+}

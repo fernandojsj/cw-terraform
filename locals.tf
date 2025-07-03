@@ -6,17 +6,25 @@ locals {
   rds_result = data.external.RDS.result
 
   RDS = {
-    rds_list        = length(local.rds_result["RDS"]) > 0 && local.rds_result["RDS"] != "" ? jsondecode(local.rds_result["RDS"]) : []
-    t_instance_list = length(local.rds_result["T_instances"]) > 0 && local.rds_result["T_instances"] != "" ? jsondecode(local.rds_result["T_instances"]) : []
+    rds_list        = can(local.rds_result["RDS"]) && length(local.rds_result["RDS"]) > 0 && local.rds_result["RDS"] != "" ? jsondecode(local.rds_result["RDS"]) : []
+    t_instance_list = can(local.rds_result["T_instances"]) && length(local.rds_result["T_instances"]) > 0 && local.rds_result["T_instances"] != "" ? jsondecode(local.rds_result["T_instances"]) : []
   }
 
   # Aurora data processing
   aurora_result = data.external.Aurora.result
 
   Aurora = {
-    provisioned   = length(local.aurora_result["aurora_provisioned"]) > 0 && local.aurora_result["aurora_provisioned"] != "" ? jsondecode(local.aurora_result["aurora_provisioned"]) : []
-    serverless_v1 = length(local.aurora_result["aurora_serverless_v1"]) > 0 && local.aurora_result["aurora_serverless_v1"] != "" ? jsondecode(local.aurora_result["aurora_serverless_v1"]) : []
-    serverless_v2 = length(local.aurora_result["aurora_serverless_v2"]) > 0 && local.aurora_result["aurora_serverless_v2"] != "" ? jsondecode(local.aurora_result["aurora_serverless_v2"]) : []
+    provisioned   = can(local.aurora_result["aurora_provisioned"]) && length(local.aurora_result["aurora_provisioned"]) > 0 && local.aurora_result["aurora_provisioned"] != "" ? jsondecode(local.aurora_result["aurora_provisioned"]) : []
+    serverless_v1 = can(local.aurora_result["aurora_serverless_v1"]) && length(local.aurora_result["aurora_serverless_v1"]) > 0 && local.aurora_result["aurora_serverless_v1"] != "" ? jsondecode(local.aurora_result["aurora_serverless_v1"]) : []
+    serverless_v2 = can(local.aurora_result["aurora_serverless_v2"]) && length(local.aurora_result["aurora_serverless_v2"]) > 0 && local.aurora_result["aurora_serverless_v2"] != "" ? jsondecode(local.aurora_result["aurora_serverless_v2"]) : []
+  }
+
+  # ECS data processing
+  ecs_result = data.external.ECS.result
+
+  ECS = {
+    with_insights    = can(local.ecs_result["ecs_with_insights"]) && length(local.ecs_result["ecs_with_insights"]) > 0 && local.ecs_result["ecs_with_insights"] != "" ? jsondecode(local.ecs_result["ecs_with_insights"]) : []
+    without_insights = can(local.ecs_result["ecs_without_insights"]) && length(local.ecs_result["ecs_without_insights"]) > 0 && local.ecs_result["ecs_without_insights"] != "" ? jsondecode(local.ecs_result["ecs_without_insights"]) : []
   }
 
   # Target groups mapping
@@ -47,15 +55,19 @@ locals {
   aurora_provisioned_block_height   = length(local.Aurora.provisioned) * 14
   aurora_serverless_v1_block_height = length(local.Aurora.serverless_v1) * 10
   aurora_serverless_v2_block_height = length(local.Aurora.serverless_v2) * 14
+  ecs_with_insights_block_height    = length(local.ECS.with_insights) > 0 ? sum([for cluster in local.ECS.with_insights : length(cluster.services) * 7]) : 0
+  ecs_without_insights_block_height = length(local.ECS.without_insights) > 0 ? sum([for cluster in local.ECS.without_insights : length(cluster.services) * 7]) : 0
 
-  alb_offset                    = 1
-  nlb_header_y                  = local.alb_offset + local.alb_block_height
-  ec2_header_y                  = local.nlb_header_y + 1 + local.nlb_block_height
-  rds_header_y                  = local.ec2_header_y + 1 + local.ec2_block_height
-  rds_t_header_y                = local.rds_header_y + local.rds_block_height + 4
-  aurora_provisioned_header_y   = local.rds_t_header_y + local.rds_t_block_height + 4
-  aurora_serverless_v1_header_y = local.aurora_provisioned_header_y + local.aurora_provisioned_block_height + 4
-  aurora_serverless_v2_header_y = local.aurora_serverless_v1_header_y + local.aurora_serverless_v1_block_height + 4
+  alb_offset                       = 1
+  nlb_header_y                     = local.alb_offset + local.alb_block_height
+  ec2_header_y                     = local.nlb_header_y + 1 + local.nlb_block_height
+  rds_header_y                     = local.ec2_header_y + 1 + local.ec2_block_height
+  rds_t_header_y                   = local.rds_header_y + local.rds_block_height + 4
+  aurora_provisioned_header_y      = local.rds_t_header_y + local.rds_t_block_height + 4
+  aurora_serverless_v1_header_y    = local.aurora_provisioned_header_y + local.aurora_provisioned_block_height + 4
+  aurora_serverless_v2_header_y    = local.aurora_serverless_v1_header_y + local.aurora_serverless_v1_block_height + 4
+  ecs_with_insights_header_y       = local.aurora_serverless_v2_header_y + local.aurora_serverless_v2_block_height + 4
+  ecs_without_insights_header_y    = local.ecs_with_insights_header_y + local.ecs_with_insights_block_height + 4
 
   # Instance configurations
   ec2_instances_credit = {
@@ -71,18 +83,18 @@ locals {
     "db.t2.medium" = 576,
 
     "db.t3.micro"   = 288,
-    "db.t3.small"   = 576,
+    "db.t3.small"   = 288,
     "db.t3.medium"  = 576,
-    "db.t3.large"   = 864,
-    "db.t3.xlarge"  = 2304,
-    "db.t3.2xlarge" = 4608,
+    "db.t3.large"   = 576,
+    "db.t3.xlarge"  = 1152,
+    "db.t3.2xlarge" = 2304,
 
     "db.t4g.micro"   = 288,
-    "db.t4g.small"   = 576,
+    "db.t4g.small"   = 288,
     "db.t4g.medium"  = 576,
-    "db.t4g.large"   = 864,
-    "db.t4g.xlarge"  = 2304,
-    "db.t4g.2xlarge" = 4608
+    "db.t4g.large"   = 576,
+    "db.t4g.xlarge"  = 1152,
+    "db.t4g.2xlarge" = 2304
   }
 
   db_instance_memory = {

@@ -1,6 +1,19 @@
 # Terraform AWS CloudWatch Dashboard
 
-Módulo Terraform para criação automática de dashboards CloudWatch com monitoramento de ALB, NLB, EC2 e RDS.
+Módulo Terraform para criação automática de dashboards CloudWatch com monitoramento de ALB, NLB, EC2, RDS e ECS.
+
+## ⚠️ IMPORTANTE: Tag de Monitoramento Obrigatória
+
+**TODOS os recursos devem ter a tag `Monitoring = "True"` para serem incluídos no dashboard.**
+
+Recursos sem esta tag **NÃO** serão monitorados.
+
+```hcl
+tags = {
+  Monitoring = "True"
+  # outras tags...
+}
+```
 
 ## Recursos Monitorados
 
@@ -79,13 +92,72 @@ Módulo Terraform para criação automática de dashboards CloudWatch com monito
 - Read/Write IOPS (widget maior: 8 width)
 - Read/Write Throughput (widget maior: 8 width)
 
+### ECS Clusters
+**Com Container Insights Habilitado**:
+- CPU Utilization
+- Memory Utilization
+- Network Tx/Rx Bytes (métricas específicas do Container Insights)
+- Running Task Count
+
+**Sem Container Insights**:
+- CPU Utilization
+- Memory Utilization
+
 ## Configuração Obrigatória
 
-### Tag OS para EC2
+### 1. Tag Monitoring Obrigatória
+
+**OBRIGATÓRIO**: Todos os recursos devem ter a tag `Monitoring = "True"`:
+
+```hcl
+# Exemplo para EC2
+resource "aws_instance" "example" {
+  # ... outras configurações
+  
+  tags = {
+    Monitoring = "True"
+    OS = "Linux"
+    Name = "minha-instancia"
+  }
+}
+
+# Exemplo para RDS
+resource "aws_db_instance" "example" {
+  # ... outras configurações
+  
+  tags = {
+    Monitoring = "True"
+    Name = "minha-database"
+  }
+}
+
+# Exemplo para ALB
+resource "aws_lb" "example" {
+  # ... outras configurações
+  
+  tags = {
+    Monitoring = "True"
+    Name = "meu-load-balancer"
+  }
+}
+
+# Exemplo para ECS Cluster
+resource "aws_ecs_cluster" "example" {
+  # ... outras configurações
+  
+  tags = {
+    Monitoring = "True"
+    Name = "meu-cluster"
+  }
+}
+```
+
+### 2. Tag OS para EC2
 **OBRIGATÓRIO**: Todas as instâncias EC2 devem ter a tag `OS` definida:
 
 ```hcl
 tags = {
+  Monitoring = "True"
   OS = "Windows"  # ou "Linux"
 }
 ```
@@ -94,7 +166,7 @@ tags = {
 - **Windows**: Usa métricas `CWAgent` com `objectname = "Memory"` e `LogicalDisk`
 - **Linux**: Usa métricas `CWAgent` padrão (`mem_used_percent`, `disk_used_percent`)
 
-### Cálculo de Max Connections RDS
+### 3. Cálculo de Max Connections RDS
 O módulo calcula automaticamente o `max_connections` baseado na engine:
 
 **MySQL**: `LEAST({DBInstanceClassMemory/12582880}, 10000)`
@@ -144,21 +216,18 @@ O módulo utiliza scripts Python para descoberta automática de recursos:
 - `get_rds.py`
 - `get_aurora.py`
 - `get_target_groups.py`
+- `get_ecs.py`
 
 ## Pré-requisitos
 
-### 1. Tag OS Obrigatória para EC2
+### 1. Tags Obrigatórias
 
-Todas as instâncias EC2 **DEVEM** ter a tag `OS`:
+**CRÍTICO**: Todos os recursos devem ter as seguintes tags:
 
 ```hcl
-resource "aws_instance" "example" {
-  # ... outras configurações
-  
-  tags = {
-    OS = "Linux"    # ou "Windows"
-    Name = "minha-instancia"
-  }
+tags = {
+  Monitoring = "True"  # OBRIGATÓRIO para todos os recursos
+  OS = "Linux"         # OBRIGATÓRIO apenas para EC2 ("Linux" ou "Windows")
 }
 ```
 
@@ -175,14 +244,21 @@ O usuário/role deve ter as seguintes permissões:
         "cloudwatch:*",
         "ec2:Describe*",
         "elasticloadbalancing:Describe*",
-        "rds:Describe*"
+        "elasticloadbalancing:DescribeTags",
+        "rds:Describe*",
+        "rds:ListTagsForResource",
+        "ecs:ListClusters",
+        "ecs:DescribeClusters",
+        "ecs:ListServices",
+        "ecs:DescribeServices"
       ],
       "Resource": "*"
     }
   ]
 }
 ```
-### 1. Estrutura do Repositório
+
+### 3. Estrutura do Repositório
 ```
 terraform-aws-cloudwatch-dashboard/
 ├── main.tf
@@ -199,21 +275,25 @@ terraform-aws-cloudwatch-dashboard/
     ├── get_network_load_balancers.py
     ├── get_rds.py
     ├── get_aurora.py
-    └── get_target_groups.py
+    ├── get_target_groups.py
+    └── get_ecs.py
 ```
 
 ## Pontos Importantes
 
-1. **Separação T vs Não-T**: Instâncias tipo T têm widgets específicos para créditos
-2. **Tag OS Obrigatória**: EC2 sem tag OS pode causar erros nas métricas
-3. **Thresholds Dinâmicos**: Memória RDS e conexões calculadas automaticamente
-4. **Widgets Responsivos**: Layout ajusta automaticamente baseado no número de recursos
-5. **Compatibilidade**: Suporta AWS Provider 5.x
-6. **CloudWatch Agent**: Necessário para métricas de memória e disco do EC2
-7. **Aurora Serverless**: Métricas específicas para V1 (capacity-based) e V2 (hybrid)
-8. **Descoberta Automática**: Aurora clusters são categorizados automaticamente por tipo
-9. **⚠️ Alarmes Aurora**: Não são criados alarmes automáticos para Aurora. Se necessário, adicione manualmente no console AWS
-10. **🔔 Alarmes Opcionais**: Alarmes só são criados se `alarm_action_arn` for fornecido. Sem ARN = apenas dashboard
+1. **🏷️ Tag Monitoring Obrigatória**: Apenas recursos com `Monitoring = "True"` são monitorados
+2. **Separação T vs Não-T**: Instâncias tipo T têm widgets específicos para créditos
+3. **Tag OS Obrigatória**: EC2 sem tag OS pode causar erros nas métricas
+4. **Thresholds Dinâmicos**: Memória RDS e conexões calculadas automaticamente
+5. **Widgets Responsivos**: Layout ajusta automaticamente baseado no número de recursos
+6. **Compatibilidade**: Suporta AWS Provider 5.x
+7. **CloudWatch Agent**: Necessário para métricas de memória e disco do EC2
+8. **Aurora Serverless**: Métricas específicas para V1 (capacity-based) e V2 (hybrid)
+9. **Descoberta Automática**: Aurora clusters são categorizados automaticamente por tipo
+10. **ECS Container Insights**: Clusters com Container Insights habilitado têm métricas avançadas (Network Tx/Rx)
+11. **ECS Separação**: Clusters são automaticamente separados por status do Container Insights
+12. **⚠️ Alarmes Aurora**: Não são criados alarmes automáticos para Aurora. Se necessário, adicione manualmente no console AWS
+13. **🔔 Alarmes Opcionais**: Alarmes só são criados se `alarm_action_arn` for fornecido. Sem ARN = apenas dashboard
 
 ## Estrutura de Arquivos
 
@@ -231,5 +311,6 @@ terraform-aws-cloudwatch-dashboard/
     ├── get_network_load_balancers.py
     ├── get_rds.py
     ├── get_aurora.py    
-    └── get_target_groups.py
+    ├── get_target_groups.py
+    └── get_ecs.py
 ```

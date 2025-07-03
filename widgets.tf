@@ -432,7 +432,7 @@ locals {
               region = data.aws_region.current.name
               period = 60
 
-              annotations = { horizontal = [{ color = "#ff0000", label = "Alert", value = floor(lookup(local.rds_instances_credit, rds_instance.type, 100) * 0.5) }] } # 50% dos créditos
+              annotations = { horizontal = [{ color = "#ff0000", label = "Alert", value = floor(lookup(local.rds_instances_credit, rds_instance.type) / 2) }] } # 50% dos créditos
             }
           },
           {
@@ -980,6 +980,187 @@ locals {
           }
         }
       ]
+    )
+  ])
+
+  # ECS with Container Insights Widgets
+  ecs_with_insights_widgets = flatten([
+    for cluster in local.ECS.with_insights : concat(
+      [{
+        type   = "text"
+        x      = 0
+        y      = local.ecs_with_insights_header_y + (length([for prev_cluster in slice(local.ECS.with_insights, 0, index(local.ECS.with_insights, cluster)) : length(prev_cluster.services) * 7]) > 0 ? sum([for prev_cluster in slice(local.ECS.with_insights, 0, index(local.ECS.with_insights, cluster)) : length(prev_cluster.services) * 7]) : 0)
+        width  = 24
+        height = 2
+        properties = {
+          markdown   = "# **Container Metrics**\n\n[button:primary:${cluster.name}](https://${data.aws_region.current.name}.console.aws.amazon.com/ecs/v2/clusters/${cluster.name}/services?region=${data.aws_region.current.name})"
+          background = "transparent"
+        }
+      }],
+      flatten([
+        for i, service in cluster.services : concat(
+          [{
+            type   = "text"
+            x      = 0
+            y      = local.ecs_with_insights_header_y + 2 + (length([for prev_cluster in slice(local.ECS.with_insights, 0, index(local.ECS.with_insights, cluster)) : length(prev_cluster.services) * 7]) > 0 ? sum([for prev_cluster in slice(local.ECS.with_insights, 0, index(local.ECS.with_insights, cluster)) : length(prev_cluster.services) * 7]) : 0) + i * 7
+            width  = 24
+            height = 1
+            properties = {
+              markdown   = "## ${service.name}"
+              background = "transparent"
+            }
+          }],
+          [
+            {
+              type   = "metric"
+              x      = 0
+              y      = local.ecs_with_insights_header_y + 3 + (length([for prev_cluster in slice(local.ECS.with_insights, 0, index(local.ECS.with_insights, cluster)) : length(prev_cluster.services) * 7]) > 0 ? sum([for prev_cluster in slice(local.ECS.with_insights, 0, index(local.ECS.with_insights, cluster)) : length(prev_cluster.services) * 7]) : 0) + i * 7
+              width  = 6
+              height = 6
+              properties = {
+                metrics = [["AWS/ECS", "CPUUtilization", "ClusterName", cluster.name, "ServiceName", service.name, { "stat" : "Maximum", "region" : data.aws_region.current.name }]]
+                view    = "timeSeries"
+                stacked = false
+                region  = data.aws_region.current.name
+                period  = 60
+                title   = "[ECS] CPU Utilization"
+                annotations = {
+                  horizontal = [{ label = "alert", value = 90 }]
+                }
+                yAxis = { left = { min = 0, max = 100 } }
+              }
+            },
+            {
+              type   = "metric"
+              x      = 6
+              y      = local.ecs_with_insights_header_y + 3 + (length([for prev_cluster in slice(local.ECS.with_insights, 0, index(local.ECS.with_insights, cluster)) : length(prev_cluster.services) * 7]) > 0 ? sum([for prev_cluster in slice(local.ECS.with_insights, 0, index(local.ECS.with_insights, cluster)) : length(prev_cluster.services) * 7]) : 0) + i * 7
+              width  = 6
+              height = 6
+              properties = {
+                metrics = [["AWS/ECS", "MemoryUtilization", "ClusterName", cluster.name, "ServiceName", service.name, { "stat" : "Maximum", "region" : data.aws_region.current.name }]]
+                view    = "timeSeries"
+                stacked = false
+                region  = data.aws_region.current.name
+                period  = 60
+                title   = "[ECS] Memory Utilization"
+                annotations = {
+                  horizontal = [{ label = "alert", value = 90 }]
+                }
+                yAxis = { left = { min = 0, max = 100 } }
+              }
+            },
+            {
+              type   = "metric"
+              x      = 12
+              y      = local.ecs_with_insights_header_y + 3 + (length([for prev_cluster in slice(local.ECS.with_insights, 0, index(local.ECS.with_insights, cluster)) : length(prev_cluster.services) * 7]) > 0 ? sum([for prev_cluster in slice(local.ECS.with_insights, 0, index(local.ECS.with_insights, cluster)) : length(prev_cluster.services) * 7]) : 0) + i * 7
+              width  = 6
+              height = 6
+              properties = {
+                metrics = [
+                  ["ECS/ContainerInsights", "NetworkTxBytes", "ServiceName", service.name, "ClusterName", cluster.name, { "stat" : "Sum" }],
+                  ["ECS/ContainerInsights", "NetworkRxBytes", "ServiceName", service.name, "ClusterName", cluster.name, { "stat" : "Sum" }]
+                ]
+                view    = "timeSeries"
+                stacked = false
+                region  = data.aws_region.current.name
+                period  = 60
+                title   = "[ECS] Network"
+                annotations = {}
+              }
+            },
+            {
+              type   = "metric"
+              x      = 18
+              y      = local.ecs_with_insights_header_y + 3 + (length([for prev_cluster in slice(local.ECS.with_insights, 0, index(local.ECS.with_insights, cluster)) : length(prev_cluster.services) * 7]) > 0 ? sum([for prev_cluster in slice(local.ECS.with_insights, 0, index(local.ECS.with_insights, cluster)) : length(prev_cluster.services) * 7]) : 0) + i * 7
+              width  = 6
+              height = 6
+              properties = {
+                metrics = [["ECS/ContainerInsights", "RunningTaskCount", "ServiceName", service.name, "ClusterName", cluster.name, { "stat" : "Minimum" }]]
+                view    = "timeSeries"
+                stacked = false
+                region  = data.aws_region.current.name
+                period  = 60
+                title   = "[ECS] Running Tasks"
+                annotations = {
+                  horizontal = [{ label = "alert", value = 0 }]
+                }
+              }
+            }
+          ]
+        )
+      ])
+    )
+  ])
+
+  # ECS without Container Insights Widgets
+  ecs_without_insights_widgets = flatten([
+    for cluster in local.ECS.without_insights : concat(
+      [{
+        type   = "text"
+        x      = 0
+        y      = local.ecs_without_insights_header_y + (length([for prev_cluster in slice(local.ECS.without_insights, 0, index(local.ECS.without_insights, cluster)) : length(prev_cluster.services) * 7]) > 0 ? sum([for prev_cluster in slice(local.ECS.without_insights, 0, index(local.ECS.without_insights, cluster)) : length(prev_cluster.services) * 7]) : 0)
+        width  = 24
+        height = 2
+        properties = {
+          markdown   = "# **Container Metrics**\n\n[button:primary:${cluster.name}](https://${data.aws_region.current.name}.console.aws.amazon.com/ecs/v2/clusters/${cluster.name}/services?region=${data.aws_region.current.name})"
+          background = "transparent"
+        }
+      }],
+      flatten([
+        for i, service in cluster.services : concat(
+          [{
+            type   = "text"
+            x      = 0
+            y      = local.ecs_without_insights_header_y + 2 + (length([for prev_cluster in slice(local.ECS.without_insights, 0, index(local.ECS.without_insights, cluster)) : length(prev_cluster.services) * 7]) > 0 ? sum([for prev_cluster in slice(local.ECS.without_insights, 0, index(local.ECS.without_insights, cluster)) : length(prev_cluster.services) * 7]) : 0) + i * 7
+            width  = 24
+            height = 1
+            properties = {
+              markdown   = "## ${service.name}"
+              background = "transparent"
+            }
+          }],
+          [
+            {
+              type   = "metric"
+              x      = 0
+              y      = local.ecs_without_insights_header_y + 3 + (length([for prev_cluster in slice(local.ECS.without_insights, 0, index(local.ECS.without_insights, cluster)) : length(prev_cluster.services) * 7]) > 0 ? sum([for prev_cluster in slice(local.ECS.without_insights, 0, index(local.ECS.without_insights, cluster)) : length(prev_cluster.services) * 7]) : 0) + i * 7
+              width  = 12
+              height = 6
+              properties = {
+                metrics = [["AWS/ECS", "CPUUtilization", "ClusterName", cluster.name, "ServiceName", service.name, { "stat" : "Maximum", "region" : data.aws_region.current.name }]]
+                view    = "timeSeries"
+                stacked = false
+                region  = data.aws_region.current.name
+                period  = 60
+                title   = "[ECS] CPU Utilization"
+                annotations = {
+                  horizontal = [{ label = "alert", value = 90 }]
+                }
+                yAxis = { left = { min = 0, max = 100 } }
+              }
+            },
+            {
+              type   = "metric"
+              x      = 12
+              y      = local.ecs_without_insights_header_y + 3 + (length([for prev_cluster in slice(local.ECS.without_insights, 0, index(local.ECS.without_insights, cluster)) : length(prev_cluster.services) * 7]) > 0 ? sum([for prev_cluster in slice(local.ECS.without_insights, 0, index(local.ECS.without_insights, cluster)) : length(prev_cluster.services) * 7]) : 0) + i * 7
+              width  = 12
+              height = 6
+              properties = {
+                metrics = [["AWS/ECS", "MemoryUtilization", "ClusterName", cluster.name, "ServiceName", service.name, { "stat" : "Maximum", "region" : data.aws_region.current.name }]]
+                view    = "timeSeries"
+                stacked = false
+                region  = data.aws_region.current.name
+                period  = 60
+                title   = "[ECS] Memory Utilization"
+                annotations = {
+                  horizontal = [{ label = "alert", value = 90 }]
+                }
+                yAxis = { left = { min = 0, max = 100 } }
+              }
+            }
+          ]
+        )
+      ])
     )
   ])
 }

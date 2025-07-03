@@ -5,7 +5,11 @@ data "aws_caller_identity" "current" {}
 
 # ==========instâncias EC2==========
 data "aws_instances" "existing" {
-
+  filter {
+    name   = "tag:Monitoring"
+    values = ["True"]
+  }
+  
   filter {
     name   = "tag:OS"
     values = ["Windows", "Linux"]
@@ -50,4 +54,9 @@ data "external" "RDS" {
 # =====Aurora=====
 data "external" "Aurora" {
   program = ["python3", "./scripts/get_aurora.py"]
+}
+
+# =====ECS=====
+data "external" "ECS" {
+  program = ["python3", "./scripts/get_ecs.py"]
 }

@@ -119,7 +119,26 @@ resource "aws_cloudwatch_dashboard" "monitoring_dashboard" {
         }
       ] : [],
       // Widgets Aurora Serverless V2
-      local.aurora_serverless_v2_widgets
+      local.aurora_serverless_v2_widgets,
+
+      // Cabeçalho ECS (incluso se existir pelo menos 1 cluster ECS)
+      (length(local.ECS.with_insights) > 0 || length(local.ECS.without_insights) > 0) ? [
+        {
+          type   = "text"
+          x      = 0
+          y      = local.ecs_with_insights_header_y
+          width  = 24
+          height = 1
+          properties = {
+            markdown   = "# ECS Metrics\n\n"
+            background = "transparent"
+          }
+        }
+      ] : [],
+      // Widgets ECS with Container Insights
+      local.ecs_with_insights_widgets,
+      // Widgets ECS without Container Insights
+      local.ecs_without_insights_widgets
     )
   })
 }
